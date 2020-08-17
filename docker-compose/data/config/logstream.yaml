@@ -1,0 +1,28 @@
+server:
+  - !channel
+    port: 50055
+    insecure-mode: true
+
+description: >
+  BuildGrid's Log Streaming service
+
+authorization:
+  method: none
+
+monitoring:
+  enabled: false
+
+instances:
+  - name: ''
+    description: |
+      The unique '' instance.
+
+    logstream-storage:
+      - !memory-logstream-storage &logstream-storage
+
+    services:
+      - !logstream
+        stream-storage: *logstream-storage
+
+      - !bytestream
+        stream-storage: *logstream-storage

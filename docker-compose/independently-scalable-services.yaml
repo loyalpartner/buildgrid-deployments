@@ -1,0 +1,165 @@
+##
+# Minimal BuildGrid deployment with independently deployed services.
+#
+#   ¡FOR LOCAL DEVELOPMENT/DEMONSTRATION ONLY!
+#
+# Spins-up a 'local' grid instance, with all services exposed using an
+# nginx proxy at http://localhost:50051/. This is a minimal deployment
+# which still has the services independently deployed, so the only
+# external dependency is PostgreSQL for storing the scheduler data.
+#
+# The publically available configured gRPC services are:
+#  - Execution
+#  - Operations
+#  - CAS
+#  - ActionCache
+#
+# This compose file also spins up internal containers for the following:
+#  - PostgreSQL
+#  - RWAPI Bots interface
+#  - RWAPI bots using `bgd bot`
+#  - nginx
+#
+# Basic usage:
+#  - docker-compose -f independently-scalable-services.yaml up --scale bots=10
+#  - docker-compose down
+#
+# The following services are also scalable, with larger scale deployments
+# able to handle larger numbers of concurrent connections:
+#  - Execution/Operations: e.g. `--scale controller=3`
+#  - Bots interface: e.g. `--scale bots-interface=3`
+#
+# For scalable ActionCache and CAS services, take a look at `s3-cas.yml` and
+# `redis-backed.yml`.
+#
+version: "3.4"
+
+services:
+  database:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: bgd
+      POSTGRES_PASSWORD: insecure
+      POSTGRES_DB: bgd
+    volumes:
+      - type: volume
+        source: db
+        target: /var/lib/postgresql/data
+    networks:
+      - backend
+    ports:
+      - "5432:5432"
+
+  storage:  # Does not support horizontal scaling
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    command: [
+      "server", "start", "-vvv",
+      "/app/config/storage.yaml"]
+    volumes:
+      - type: volume
+        source: data
+        target: /var/lib/buildgrid/store
+        volume:
+          nocopy: true
+      - type: bind
+        source: ./data/config/storage.yaml
+        target: /app/config/storage.yaml
+    ports:
+      - "50052:50052"
+    networks:
+      - backend
+
+  cache:  # Does not support horizontal scaling
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    command: [
+      "server", "start", "-vvv",
+      "/app/config/cache.yaml"]
+    volumes:
+      - type: bind
+        source: ./data/config/cache.yaml
+        target: /app/config/cache.yaml
+    ports:
+      - "50053:50053"
+    networks:
+      - backend
+
+  controller:  # To be scaled horizontally
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    command: [
+      "server", "start", "-vvv",
+      "/app/config/controller.yaml"]
+    volumes:
+      - type: bind
+        source: ./data/config/controller.yaml
+        target: /app/config/controller.yaml
+    expose:
+      - 50051
+    depends_on:
+      - database
+    networks:
+      - backend
+
+  bots-interface:  # To be scaled horizontally
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    command: [
+      "server", "start", "-vvv",
+      "/app/config/bots-interface.yaml"]
+    volumes:
+      - type: bind
+        source: ./data/config/bots-interface.yaml
+        target: /app/config/bots-interface.yaml
+    expose:
+      - 50054
+    depends_on:
+      - database
+    networks:
+      - backend
+
+  bots:  # To be scaled horizontally
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    command: [
+      "bot", "--instance-name=",
+      "--remote=http://bots-interface:50054",
+      "--remote-cas=http://storage:50052",
+      "host-tools"]
+    privileged: true
+    volumes:
+      - type: volume
+        source: cache
+        target: /var/lib/buildgrid/cache
+      - type: bind
+        source: ./data/bin
+        target: /app/tools
+    depends_on:
+      - controller
+    networks:
+      - backend
+
+  # We use nginx here to provide a proxy through to the various services.
+  # This allows independent horizontal scaling of the services whilst
+  # still providing a single endpoint for clients to connect to.
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./data/config/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - controller
+      - storage
+      - cache
+    ports:
+      - "50051:50051"
+    networks:
+      - backend
+      - host
+
+networks:
+  backend:
+  host:
+
+volumes:
+  cache:
+    name: bgd-independently-scalable-worker-cache
+  data:
+    name: bgd-independently-scalable-data
+  db:
+    name: bgd-independently-scalable-database

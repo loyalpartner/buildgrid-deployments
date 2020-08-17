@@ -1,0 +1,41 @@
+server:
+  - !channel
+    port: 50053
+    insecure-mode: true
+
+description: >
+  Docker Compose ActionCache configuration:
+    - Unauthenticated plain HTTP at :50053
+    - Single instance: [unnamed]
+    - Expects a remote CAS at :50052
+    - Hosted services:
+      - ActionCache
+
+authorization:
+  method: none
+
+monitoring:
+  enabled: false
+
+instances:
+  - name: cache
+    description: |
+      The unique unnamed instance.
+
+    storages:
+      - !remote-storage &data-store
+        url: http://storage:50052
+        instance-name: ''
+
+    caches:
+      - !lru-action-cache &lru-cache
+        storage: *data-store
+        max-cached-refs: 256
+        cache-failed-actions: true
+        allow-updates: true
+
+    services:
+      - !action-cache
+        cache: *lru-cache
+
+thread-pool-size: 100

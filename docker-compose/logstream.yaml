@@ -1,0 +1,31 @@
+##
+# Example LogStream-only BuildGrid deployment
+#
+#   ¡FOR LOCAL DEVELOPMENT/DEMONSTRATION ONLY!
+#
+# This example provides a way to experiment with BuildGrid's LogStream
+# service. It is intended to be used as a server-side counterpart for
+# testing with the `bgd logstream` commands.
+#
+# This deployment provides:
+#  - LogStream service on http://localhost:50051
+#  - ByteStream service for the above LogStream, also on http://localhost:50051
+#
+# Basic usage:
+#  - docker-compose -f logstream.yaml up
+#  - docker-compose down
+#
+version: "3.2"
+
+services:
+  logstream:
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    command: [
+      "server", "start", "-vvv",
+      "/app/config/logstream.yaml"]
+    volumes:
+      - type: bind
+        source: ./data/config/logstream.yaml
+        target: /app/config/logstream.yaml
+    ports:
+      - 50051:50051

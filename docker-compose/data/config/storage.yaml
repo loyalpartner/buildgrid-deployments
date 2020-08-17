@@ -1,0 +1,37 @@
+server:
+  - !channel
+    port: 50052
+    insecure-mode: true
+
+description: >
+  Docker Compose storage configuration:
+    - Unauthenticated plain HTTP at :50052
+    - Single instance: [unnamed]
+    - On-disk data stored in /var
+    - Hosted services:
+       - ContentAddressableStorage
+       - ByteStream
+
+authorization:
+  method: none
+
+monitoring:
+  enabled: false
+
+instances:
+  - name: ''
+    description: |
+      The unique unnamed instance.
+
+    storages:
+      - !disk-storage &data-store
+        path: /var/lib/buildgrid/store
+
+    services:
+      - !cas
+        storage: *data-store
+
+      - !bytestream
+        storage: *data-store
+
+thread-pool-size: 100

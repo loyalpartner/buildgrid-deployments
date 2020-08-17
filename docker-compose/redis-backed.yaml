@@ -1,0 +1,111 @@
+##
+# BuildGrid deployment using Redis to back the CAS/ActionCache
+#
+#   ¡FOR LOCAL DEVELOPMENT/DEMONSTRATION ONLY!
+#
+# Spins up a BuildGrid, with the all the configured services exposed at
+# http://localhost:50051/. This example uses Redis to store CAS and
+# ActionCache data, so all services should support horizontal scaling.
+#
+# For an example with the services running in separate BuildGrid instances,
+# look at `independently-scalable-services.yaml`.
+#
+# The publically available configured gRPC services are:
+#  - Execution
+#  - Operations
+#  - CAS
+#  - ActionCache
+#
+# Basic usage:
+#  - docker-compose -f redis-backed.yml up --scale bots=10
+#  - docker-compose down
+#
+# Scaling:
+#  - docker-compose -f redis-backed.yaml up --scale buildgrid=3 --scale bots=10
+#
+version: "3.4"
+
+services:
+  database:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: bgd
+      POSTGRES_PASSWORD: insecure
+      POSTGRES_DB: bgd
+    volumes:
+      - type: volume
+        source: db
+        target: /var/lib/postgresql/data
+    networks:
+      - backend
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:latest
+    networks:
+      - backend
+    ports:
+      - "6379:6379"
+
+  buildgrid:  # To be scaled horizontally
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    command: [
+      "server", "start", "-vvv",
+      "/app/config/redis-cache.yaml"]
+    volumes:
+      - type: bind
+        source: ./data/config/redis-cache.yaml
+        target: /app/config/redis-cache.yaml
+    expose:
+      - 50051
+    networks:
+      - backend
+      - host
+
+  bots:  # To be scaled horizontally
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    command: [
+      "bot", "--instance-name=",
+      "--remote=http://buildgrid:50051",
+      "--remote-cas=http://buildgrid:50051",
+      "host-tools"]
+    privileged: true
+    volumes:
+      - type: volume
+        source: cache
+        target: /var/lib/buildgrid/cache
+      - type: bind
+        source: ./data/bin
+        target: /app/tools
+    depends_on:
+      - buildgrid
+    networks:
+      - backend
+
+  # We use nginx here to provide a proxy through to the BuildGrid service.
+  # This allows horizontal scaling of the service whilst still providing
+  # a single endpoint for clients to connect to.
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./data/config/nginx-single-node.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - buildgrid
+    ports:
+      - "50051:50051"
+    networks:
+      - backend
+      - host
+
+networks:
+  backend:
+  host:
+
+volumes:
+  cache:
+    name: bgd-redis-ac-worker-cache
+  data:
+    name: bgd-redis-ac-data
+  db:
+    name: bgd-redis-ac-scheduler-database

@@ -1,0 +1,49 @@
+server:
+  - !channel
+    port: 50052
+    insecure-mode: true
+
+description: >
+  Docker Compose storage configuration:
+    - Unauthenticated plain HTTP at :50052
+    - Single instance: [unnamed]
+    - On-disk data stored in /var
+    - Hosted services:
+       - ContentAddressableStorage
+       - ByteStream
+
+authorization:
+  method: none
+
+monitoring:
+  enabled: true
+  endpoint-type: udp
+  endpoint-location: statsd:8125
+  serialization-format: statsd
+  metric-prefix: buildgrid
+
+instances:
+  - name: ''
+    description: |
+      The unique unnamed instance.
+
+    storages:
+      - !s3-storage &data-store
+        bucket: buildgrid
+        endpoint: http://minio:9000
+        access-key: minioadmin
+        secret-key: minioadmin
+      - !sql-index &my-index
+        storage: *data-store
+        connection-string: postgresql://bgd:insecure@database/bgd
+        automigrate: yes
+
+
+    services:
+      - !cas
+        storage: *my-index
+
+      - !bytestream
+        storage: *my-index
+
+thread-pool-size: 100

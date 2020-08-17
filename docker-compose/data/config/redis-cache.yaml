@@ -1,0 +1,68 @@
+server:
+  - !channel
+    port: 50051
+    insecure-mode: true
+
+description: >
+  Basic BuildGrid config using a Redis action cache:
+    - Unauthenticated plain HTTP at :50051
+    - Single instance: [unnamed]
+    - Data in Redis
+    - Scheduler DataStore: PostgreSQL database named `bgd`
+    - Hosted services:
+       - ActionCache
+       - Execute
+       - ContentAddressableStorage
+       - ByteStream
+
+authorization:
+  method: none
+
+monitoring:
+  enabled: false
+
+instances:
+  - name: ''
+    description: |
+      The unique '' instance.
+
+    storages:
+      - !redis-storage &cas-storage
+        host: redis
+        port: 6379
+
+    schedulers:
+      - !sql-scheduler &state-database
+        storage: *cas-storage
+        connection-string: postgresql://bgd:insecure@database/bgd
+        automigrate: yes
+        pool-size: 5
+        pool-timeout: 30
+        max-overflow: 10
+
+    caches:
+      - !redis-action-cache &build-cache
+        storage: *cas-storage
+        cache-failed-actions: true
+        allow-updates: true
+        host: redis
+        port: 6379
+
+    services:
+      - !action-cache
+        cache: *build-cache
+
+      - !execution
+        storage: *cas-storage
+        action-cache: *build-cache
+        scheduler: *state-database
+        max-execution-timeout: 7200
+
+      - !cas
+        storage: *cas-storage
+
+      - !bytestream
+        storage: *cas-storage
+
+
+thread-pool-size: 100

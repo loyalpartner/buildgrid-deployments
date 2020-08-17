@@ -1,0 +1,54 @@
+server:
+  - !channel
+    port: 50051
+    insecure-mode: true
+
+description: >
+  Docker Compose controller configuration:
+    - Unauthenticated plain HTTP at :50051
+    - Single instance: [unnamed]
+    - Expects a remote CAS at :50052
+    - Hosted services:
+       - Execute
+
+authorization:
+  method: none
+
+monitoring:
+  enabled: false
+
+instances:
+  - name: ''
+    description: |
+      The unique unnamed instance.
+
+    storages:
+      - !remote-storage &cas-storage
+        url: http://storage:50052
+        instance-name: ''
+
+    caches:
+      - !remote-action-cache &build-cache
+        url: http://cache:50053
+        instance-name: cache
+
+    schedulers:
+      - !sql-scheduler &state-database
+        storage: *cas-storage
+        connection-string: postgresql://bgd:insecure@database/bgd
+        automigrate: yes
+        pool-size: 5
+        pool-timeout: 30
+        max-overflow: 10
+
+    services:
+      - !execution
+        storage: *cas-storage
+        action-cache: *build-cache
+        action-browser-url: http://localhost:8080
+        scheduler: *state-database
+        endpoints:
+          - execution
+          - operations
+
+thread-pool-size: 100

@@ -1,0 +1,220 @@
+##
+# BuildGrid deployment with some example monitoring dashboards
+#
+#   ¡FOR LOCAL DEVELOPMENT/DEMONSTRATION ONLY!
+#
+# Spins-up a 'local' grid instance, with all services exposed using an
+# nginx proxy at http://localhost:50051/. Like the example in `s3-cas.yaml`,
+# this deployment uses Minio to back an S3 CAS, with cleanup/expiry enabled.
+# This deployment also includes containers for Graphite and Grafana, which
+# are used to gather metrics about the BuildGrid services, and display them
+# in some example Grafana dashboards. Grafana's web UI is exposed at
+# http://localhost:3000/.
+#
+# The publically available configured gRPC services are:
+#  - Execution
+#  - Operations
+#  - CAS
+#  - ActionCache
+#
+# This compose file also spins up internal containers for the following:
+#  - PostgreSQL
+#  - Minio (providing an S3-compatible storage backend)
+#  - RWAPI Bots interface
+#  - RWAPI bots using `bgd bot`
+#  - `bgd cleanup` to limit the storage usage of the CAS
+#  - nginx
+#  - Graphite
+#  - Grafana
+#
+# Basic usage:
+#  - docker-compose -f grafana-monitoring.yaml up --scale bots=10
+#  - docker-compose down
+#
+# The following services are also scalable, with larger scale deployments
+# able to handle larger numbers of concurrent connections:
+#  - Execution/Operations/Bots interface: e.g. `--scale controller=3`
+#  - CAS: e.g. `--scale storage=3`
+#
+# For scalable ActionCache take a look at `redis-backed.yml`.
+#
+version: "3.4"
+
+services:
+  database:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: bgd
+      POSTGRES_PASSWORD: insecure
+      POSTGRES_DB: bgd
+    volumes:
+      - type: volume
+        source: db
+        target: /var/lib/postgresql/data
+    networks:
+      - backend
+    ports:
+      - "5432:5432"
+
+  statsd:
+    image: graphiteapp/docker-graphite-statsd
+    ports:
+      - "80:80"
+      - "2003-2004:2003-2004"
+      - "2023-2024:2023-2024"
+      - "8125:8125/udp"
+      - "8126:8126"
+    networks:
+      - backend
+
+  grafana:
+    image: grafana/grafana
+    environment:
+      GF_AUTH_BASIC_ENABLED: "false"
+      GF_AUTH_PROXY_ENABLED: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - type: bind
+        source: ./data/config/grafana
+        target: /etc/grafana/provisioning
+    depends_on:
+      - statsd
+    networks:
+      - backend
+      - host
+
+  minio:
+    image: minio/minio:latest
+    entrypoint: /bin/sh -c
+    command: [
+      "mkdir -p /data/buildgrid && \
+       minio server /data"
+    ]
+    volumes:
+      - type: volume
+        source: s3
+        target: /data
+    expose:
+      - 9000
+    networks:
+      - backend
+
+  storage:  # To be scaled horizontally
+    image: buildgrid:local
+    command: [
+      "server", "start", "-vv",
+      "/app/config/s3-indexed-cas.yaml"]
+    volumes:
+      - type: bind
+        source: ./data/config/s3-indexed-cas.yaml
+        target: /app/config/s3-indexed-cas.yaml
+    expose:
+      - 50052
+    networks:
+      - backend
+
+  cache:  # Does not support horizontal scaling
+    image: buildgrid:local
+    command: [
+      "server", "start", "-vvv",
+      "/app/config/cache.yaml"]
+    volumes:
+      - type: bind
+        source: ./data/config/cache.yaml
+        target: /app/config/cache.yaml
+    expose:
+      - 50053
+    networks:
+      - backend
+
+  controller:  # To be scaled horizontally
+    image: buildgrid:local
+    command: [
+      "server", "start", "-vvv",
+      "/app/config/controller.yaml"]
+    volumes:
+      - type: bind
+        source: ./data/config/monitoring-controller.yaml
+        target: /app/config/controller.yaml
+    expose:
+      - 50051
+    depends_on:
+      - database
+      - statsd
+    networks:
+      - backend
+
+  bots:  # To be scaled horizontally
+    image: buildgrid:local
+    command: [
+      "bot", "--instance-name=",
+      "--remote=http://controller:50051",
+      "--remote-cas=http://storage:50052",
+      "host-tools"]
+    privileged: true
+    volumes:
+      - type: volume
+        source: cache
+        target: /var/lib/buildgrid/cache
+      - type: bind
+        source: ./data/bin
+        target: /app/tools
+    depends_on:
+      - controller
+    networks:
+      - backend
+
+  # The cleanup container handles cleaning up old blobs from the CAS, deleting
+  # them from both the S3 bucket and the SQL index.
+  cleanup:
+    image: buildgrid:local
+    # The high and low watermarks can be reduced for easier testing of
+    # cleanup in particular, but having them too low will make it difficult
+    # to run real work.
+    command: [
+      "cleanup", "start", "-vv", "--high-watermark", "2G",
+      "--low-watermark", "1G", "--batch-size", "100M", "--sleep-interval",
+      "10", "/app/config/s3-indexed-cas.yaml"
+    ]
+    volumes:
+      - type: bind
+        source: ./data/config/s3-indexed-cas.yaml
+        target: /app/config/s3-indexed-cas.yaml
+    depends_on:
+      - minio
+      - database
+      - storage
+      - statsd
+    networks:
+      - backend
+
+  # We use nginx here to provide a proxy through to the various services.
+  # This allows independent horizontal scaling of the services whilst
+  # still providing a single endpoint for clients to connect to.
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./data/config/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - controller
+      - storage
+      - cache
+    ports:
+      - "50051:50051"
+    networks:
+      - backend
+      - host
+
+networks:
+  backend:
+  host:
+
+volumes:
+  cache:
+    name: bgd-monitoring-worker-cache
+  db:
+    name: bgd-monitoring-database
+  s3:
+    name: bgd-monitoring-data
