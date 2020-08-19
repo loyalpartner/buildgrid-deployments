@@ -1,0 +1,29 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: bgd-cas-pv-volume
+  labels:
+    type: local
+    app: bgd-cas
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 30Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/mnt/buildgrid/store"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: bgd-cas-pv-claim
+  labels:
+    app: bgd-cas
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 30Gi

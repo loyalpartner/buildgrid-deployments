@@ -1,0 +1,138 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bgd-execution-conf
+  labels:
+    app: bgd-execution
+data:
+  execution.yaml: |
+    server:
+      - !channel
+        port: 50051
+        insecure-mode: true
+
+    description: >
+      BuildGrid Execution service configuration
+
+    authorization:
+      method: none
+
+    monitoring:
+      enabled: false
+
+    instances:
+      - name: buildgrid
+        description: |
+          The `buildgrid` BuildGrid instance.
+
+        storages:
+          - !remote-storage &cas-storage
+            url: http://bgd-cas:50052
+            instance-name: buildgrid
+
+        caches:
+          - !remote-action-cache &build-cache
+            url: http://bgd-cache:50053
+            instance-name: buildgrid
+
+        schedulers:
+          - !sql-scheduler &state-database
+            storage: *cas-storage
+            connection-string: postgresql://bgd:insecure@postgres/bgd
+            automigrate: yes
+            pool-size: 5
+            pool-timeout: 30
+            max-overflow: 10
+
+        services:
+          - !execution
+            storage: *cas-storage
+            action-cache: *build-cache
+            scheduler: *state-database
+
+    thread-pool-size: 100
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bgd-cas-conf
+  labels:
+    app: bgd-cas
+data:
+  cas.yaml: |
+    server:
+      - !channel
+        port: 50052
+        insecure-mode: true
+
+    description: |
+      BuildGrid Content Addressable Storage configuration
+
+    authorization:
+      method: none
+
+    monitoring:
+      enabled: false
+
+    instances:
+      - name: buildgrid
+        description: |
+          The `buildgrid` BuildGrid instance.
+
+        storages:
+          - !disk-storage &cas-storage
+            path: /var/lib/buildgrid/store
+
+        services:
+          - !cas
+            storage: *cas-storage
+
+          - !bytestream
+            storage: *cas-storage
+
+    thread-pool-size: 100
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bgd-ac-conf
+  labels:
+    app: bgd-cache
+data:
+  cache.yaml: |
+    server:
+      - !channel
+        port: 50053
+        insecure-mode: true
+
+    description: |
+      BuildGrid Action Cache configuration
+
+    authorization:
+      method: none
+
+    monitoring:
+      enabled: false
+
+    instances:
+      - name: buildgrid
+        description: |
+          The `buildgrid` BuildGrid instance.
+
+        storages:
+          - !remote-storage &cas-storage
+            url: http://bgd-cas:50052
+            instance-name: buildgrid
+
+        caches:
+          - !lru-action-cache &lru-cache
+            storage: *cas-storage
+            max-cached-refs: 2048
+            cache-failed-actions: false
+            allow-updates: true
+
+        services:
+          - !action-cache
+            cache: *lru-cache
+
+    thread-pool-size: 100

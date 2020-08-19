@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bgd-execution
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bgd-execution
+  template:
+    metadata:
+      labels:
+        app: bgd-execution
+    spec:
+      containers:
+        - name: bgd-execution
+          image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:b0728632
+          args:
+            - server
+            - start
+            - -vvv
+            - /etc/bgd/execution.yaml
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 50051
+          volumeMounts:
+            - mountPath: /etc/bgd
+              name: bgd-exec-config
+      volumes:
+        - name: bgd-exec-config
+          configMap:
+            name: bgd-execution-conf
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bgd-cas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bgd-cas
+  template:
+    metadata:
+      labels:
+        app: bgd-cas
+    spec:
+      containers:
+        - name: bgd-cas
+          image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:b0728632
+          args:
+            - server
+            - start
+            - -vvv
+            - /etc/bgd/cas.yaml
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 50052
+          volumeMounts:
+            - mountPath: /etc/bgd
+              name: bgd-cas-config
+            - mountPath: /var/lib/buildgrid/store
+              name: bgd-cas-storage
+      volumes:
+        - name: bgd-cas-config
+          configMap:
+            name: bgd-cas-conf
+        - name: bgd-cas-storage
+          persistentVolumeClaim:
+            claimName: bgd-cas-pv-claim
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bgd-ac
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bgd-cache
+  template:
+    metadata:
+      labels:
+        app: bgd-cache
+    spec:
+      containers:
+        - name: bgd-ac
+          image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:b0728632
+          args:
+            - server
+            - start
+            - -vvv
+            - /etc/bgd/cache.yaml
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 50053
+          volumeMounts:
+            - mountPath: /etc/bgd
+              name: bgd-ac-config
+      volumes:
+        - name: bgd-ac-config
+          configMap:
+            name: bgd-ac-conf
