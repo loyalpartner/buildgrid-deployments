@@ -49,6 +49,8 @@ data:
             storage: *cas-storage
             action-cache: *build-cache
             scheduler: *state-database
+            property-keys:
+              - runner
 
     thread-pool-size: 100
 ---
