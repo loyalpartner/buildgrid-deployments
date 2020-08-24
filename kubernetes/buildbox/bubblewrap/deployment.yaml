@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: buildbox-run-bubblewrap
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: buildbox-run-bubblewrap
+  template:
+    metadata:
+      labels:
+        app: buildbox-run-bubblewrap
+    spec:
+      containers:
+        - name: buildbox-run-bubblewrap
+          image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:nightly
+          command: ["/bin/sh", "-c", "--"]
+          args:
+            - >
+              sleep 5;
+              buildbox-casd --cas-remote=http://bgd-cas:50052
+              --bind=localhost:50011 --instance=buildgrid --cas-instance=buildgrid /tmp/casd & 
+              buildbox-worker --buildbox-run=/usr/local/bin/buildbox-run-bubblewrap
+              --cas-remote=http://localhost:50011 --bots-remote=http://bgd-execution:50051
+              --instance=buildgrid --verbose --request-timeout=30 --platform runner=bubblewrap
+              --platform ISA=x86-64 --platform OSFamily=linux
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
