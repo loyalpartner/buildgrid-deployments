@@ -9,4 +9,4 @@ stages:
 lint:
   stage: test
   script:
-    - docker run -v `pwd`/kubernetes:/kubernetes garethr/kubeval kubernetes/**/*
+    - docker run -v `pwd`/kubernetes:/kubernetes garethr/kubeval -d kubernetes
