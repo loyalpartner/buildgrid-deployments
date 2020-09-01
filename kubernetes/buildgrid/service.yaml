@@ -5,7 +5,6 @@ metadata:
   labels:
     app: bgd-execution
 spec:
-  type: LoadBalancer
   ports:
     - port: 50051
       protocol: TCP
@@ -19,7 +18,6 @@ metadata:
   labels:
     app: bgd-cas
 spec:
-  type: LoadBalancer
   ports:
     - port: 50052
       protocol: TCP
@@ -33,7 +31,6 @@ metadata:
   labels:
     app: bgd-cache
 spec:
-  type: LoadBalancer
   ports:
     - port: 50053
       protocol: TCP
