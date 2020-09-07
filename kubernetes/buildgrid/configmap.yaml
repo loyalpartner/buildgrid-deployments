@@ -127,14 +127,15 @@ data:
             instance-name: buildgrid
 
         caches:
-          - !lru-action-cache &lru-cache
+          - !redis-action-cache &redis-cache
             storage: *cas-storage
-            max-cached-refs: 2048
             cache-failed-actions: false
             allow-updates: true
+            host: redis
+            port: 6379
 
         services:
           - !action-cache
-            cache: *lru-cache
+            cache: *redis-cache
 
     thread-pool-size: 100
