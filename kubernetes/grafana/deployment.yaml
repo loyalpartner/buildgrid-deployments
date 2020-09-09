@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: grafana-config
+          volumeMounts:
+          - mountPath: /var/lib/grafana
+            name: grafana-storage
+          - mountPath: /etc/grafana/provisioning/dashboards
+            name: dashboards-config
+          - mountPath: /etc/grafana/provisioning/dashboards/buildgrid
+            name: buildgrid-dashboards
+          - mountPath: /etc/grafana/provisioning/datasources
+            name: datasources
+      volumes:
+        - name: grafana-storage
+          persistentVolumeClaim:
+            claimName: grafana-pv-claim
+        - name: dashboards-config
+          configMap:
+            name: grafana-dashboards-config
+        - name: buildgrid-dashboards
+          configMap:
+            name: grafana-buildgrid-dashboards
+        - name: datasources
+          configMap:
+            name: grafana-datasources-config
+      securityContext:
+        runAsUser: 0
+      # As noted in: https://grafana.com/docs/grafana/latest/installation/docker/#migration-from-a-previous-version-of-the-docker-container-to-5-1-or-later
+      # Grafana runs as user 472 and needs to be able to write to /var/lib/grafana.
+      # (Setting `fsGroup: 472` here make the directory be chown()'d to
+      # root:grafana, causing it to be read-only.)
