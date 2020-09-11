@@ -18,7 +18,11 @@ data:
       method: none
 
     monitoring:
-      enabled: false
+      enabled: true
+      endpoint-type: udp
+      endpoint-location: graphite:8125
+      serialization-format: statsd
+      metric-prefix: buildgrid
 
     instances:
       - name: buildgrid
@@ -74,7 +78,11 @@ data:
       method: none
 
     monitoring:
-      enabled: false
+      enabled: true
+      endpoint-type: udp
+      endpoint-location: graphite:8125
+      serialization-format: statsd
+      metric-prefix: buildgrid
 
     instances:
       - name: buildgrid
@@ -114,7 +122,11 @@ data:
       method: none
 
     monitoring:
-      enabled: false
+      enabled: true
+      endpoint-type: udp
+      endpoint-location: graphite:8125
+      serialization-format: statsd
+      metric-prefix: buildgrid
 
     instances:
       - name: buildgrid
