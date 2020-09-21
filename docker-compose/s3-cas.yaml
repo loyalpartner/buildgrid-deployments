@@ -71,7 +71,7 @@ services:
       - backend
 
   storage:  # To be scaled horizontally
-    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
     command: [
       "server", "start", "-vv",
       "/app/config/s3-indexed-cas.yaml"]
@@ -85,7 +85,7 @@ services:
       - backend
 
   cache:
-    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
     command: [
       "server", "start", "-vvv",
       "/app/config/cache.yaml"]
@@ -99,7 +99,7 @@ services:
       - backend
 
   controller:  # To be scaled horizontally
-    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
     command: [
       "server", "start", "-vvv",
       "/app/config/controller.yaml"]
@@ -115,7 +115,7 @@ services:
       - backend
 
   bots-interface:  # To be scaled horizontally
-    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
     command: [
       "server", "start", "-vvv",
       "/app/config/bots-interface.yaml"]
@@ -146,7 +146,7 @@ services:
   # The cleanup container handles cleaning up old blobs from the CAS, deleting
   # them from both the S3 bucket and the SQL index.
   cleanup:
-    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
     # The high and low watermarks can be reduced for easier testing of
     # cleanup in particular, but having them too low will make it difficult
     # to run real work.

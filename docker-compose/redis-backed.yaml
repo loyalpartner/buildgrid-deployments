@@ -49,7 +49,7 @@ services:
       - "6379:6379"
 
   buildgrid:  # To be scaled horizontally
-    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
     command: [
       "server", "start", "-vvv",
       "/app/config/redis-cache.yaml"]

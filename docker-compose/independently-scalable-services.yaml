@@ -51,7 +51,7 @@ services:
       - "5432:5432"
 
   storage:  # Does not support horizontal scaling
-    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
     command: [
       "server", "start", "-vvv",
       "/app/config/storage.yaml"]
@@ -70,7 +70,7 @@ services:
       - backend
 
   cache:  # Does not support horizontal scaling
-    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
     command: [
       "server", "start", "-vvv",
       "/app/config/cache.yaml"]
@@ -84,7 +84,7 @@ services:
       - backend
 
   controller:  # To be scaled horizontally
-    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
     command: [
       "server", "start", "-vvv",
       "/app/config/controller.yaml"]
@@ -100,7 +100,7 @@ services:
       - backend
 
   bots-interface:  # To be scaled horizontally
-    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
+    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
     command: [
       "server", "start", "-vvv",
       "/app/config/bots-interface.yaml"]
