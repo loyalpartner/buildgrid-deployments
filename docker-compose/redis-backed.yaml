@@ -64,24 +64,16 @@ services:
       - host
 
   bots:  # To be scaled horizontally
-    image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:18abc8f6
-    command: [
-      "bot", "--instance-name=",
-      "--remote=http://buildgrid:50051",
-      "--remote-cas=http://buildgrid:50051",
-      "host-tools"]
+    image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:nightly
     privileged: true
-    volumes:
-      - type: volume
-        source: cache
-        target: /var/lib/buildgrid/cache
-      - type: bind
-        source: ./data/bin
-        target: /app/tools
+    environment:
+      BUILDGRID_SERVER_URL: http://buildgrid:50051
+      RUNNER_BINARY: buildbox-run-hosttools
     depends_on:
       - buildgrid
     networks:
       - backend
+    restart: always
 
   # We use nginx here to provide a proxy through to the BuildGrid service.
   # This allows horizontal scaling of the service whilst still providing
@@ -103,8 +95,6 @@ networks:
   host:
 
 volumes:
-  cache:
-    name: bgd-redis-ac-worker-cache
   data:
     name: bgd-redis-ac-data
   db:

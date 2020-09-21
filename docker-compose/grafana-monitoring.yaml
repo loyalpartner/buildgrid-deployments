@@ -147,24 +147,17 @@ services:
       - backend
 
   bots:  # To be scaled horizontally
-    image: buildgrid:local
-    command: [
-      "bot", "--instance-name=",
-      "--remote=http://controller:50051",
-      "--remote-cas=http://storage:50052",
-      "host-tools"]
+    image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:nightly
     privileged: true
-    volumes:
-      - type: volume
-        source: cache
-        target: /var/lib/buildgrid/cache
-      - type: bind
-        source: ./data/bin
-        target: /app/tools
+    environment:
+      BUILDGRID_SERVER_URL: http://controller:50051
+      CAS_SERVER_URL: http://storage:50052
+      RUNNER_BINARY: buildbox-run-hosttools
     depends_on:
       - controller
     networks:
       - backend
+    restart: always
 
   # The cleanup container handles cleaning up old blobs from the CAS, deleting
   # them from both the S3 bucket and the SQL index.
@@ -212,8 +205,6 @@ networks:
   host:
 
 volumes:
-  cache:
-    name: bgd-monitoring-worker-cache
   db:
     name: bgd-monitoring-database
   s3:

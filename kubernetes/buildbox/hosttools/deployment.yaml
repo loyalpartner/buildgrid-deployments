@@ -15,16 +15,17 @@ spec:
       containers:
         - name: buildbox-run-hosttools
           image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:nightly
-          command: ["/bin/sh", "-c", "--"]
-          args:
-            - >
-              sleep 5;
-              buildbox-casd --cas-remote=http://bgd-cas:50052
-              --bind=localhost:50011 --instance=buildgrid --cas-instance=buildgrid /tmp/casd & 
-              buildbox-worker --buildbox-run=/usr/local/bin/buildbox-run-hosttools
-              --cas-remote=http://localhost:50011 --bots-remote=http://bgd-execution:50051
-              --instance=buildgrid --verbose --request-timeout=30 --platform runner=hosttools
-              --platform ISA=x86-64 --platform OSFamily=linux
+          env:
+            - name: BUILDGRID_SERVER_URL
+              value: http://bgd-execution:50051
+            - name: CAS_SERVER_URL
+              value: http://bgd-cas:50052
+            - name: RUNNER_BINARY
+              value: buildbox-run-hosttools
+            - name: INSTANCE_NAME
+              value: buildgrid
+            - name: PLATFORM_PROPERTY_OPTS
+              value: "--platform runner=hosttools --platform OSFamily=linux --platform ISA=x86-64"
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
