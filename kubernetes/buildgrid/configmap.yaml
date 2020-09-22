@@ -55,6 +55,8 @@ data:
             scheduler: *state-database
             property-keys:
               - runner
+            wildcard-property-keys:
+              - chrootRootDigest
 
     thread-pool-size: 100
 ---
