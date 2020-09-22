@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: buildbox-run-userchroot
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: buildbox-run-userchroot
+  template:
+    metadata:
+      labels:
+        app: buildbox-run-userchroot
+    spec:
+      containers:
+        - name: buildbox-run-userchroot
+          image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:nightly
+          env:
+            - name: BUILDGRID_SERVER_URL
+              value: http://bgd-execution:50051
+            - name: CAS_SERVER_URL
+              value: http://bgd-cas:50052
+            - name: RUNNER_BINARY
+              value: buildbox-run-userchroot
+            - name: BUILDBOX_STAGER
+              value: hardlink
+            - name: INSTANCE_NAME
+              value: buildgrid
+            - name: PLATFORM_PROPERTY_OPTS
+              value: "--platform runner=userchroot --platform OSFamily=linux --platform ISA=x86-64"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
