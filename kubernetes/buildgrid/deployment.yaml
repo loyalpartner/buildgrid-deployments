@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: bgd-execution
-          image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:b0728632
+          image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
           args:
             - server
             - start
@@ -47,7 +47,7 @@ spec:
     spec:
       containers:
         - name: bgd-cas
-          image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:b0728632
+          image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
           args:
             - server
             - start
@@ -85,7 +85,7 @@ spec:
     spec:
       containers:
         - name: bgd-ac
-          image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:b0728632
+          image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
           args:
             - server
             - start
