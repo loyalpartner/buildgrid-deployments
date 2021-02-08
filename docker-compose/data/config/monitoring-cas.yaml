@@ -16,7 +16,11 @@ authorization:
   method: none
 
 monitoring:
-  enabled: false
+  enabled: true
+  endpoint-type: udp
+  endpoint-location: statsd:8125
+  serialization-format: statsd
+  metric-prefix: buildgrid
 
 instances:
   - name: ''

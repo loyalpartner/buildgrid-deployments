@@ -21,7 +21,7 @@
 #  - PostgreSQL
 #  - Minio (providing an S3-compatible storage backend)
 #  - RWAPI Bots interface
-#  - RWAPI bots using `bgd bot`
+#  - RWAPI bots using `buildbox-run-hosttools`
 #  - `bgd cleanup` to limit the storage usage of the CAS
 #  - nginx
 #  - Graphite
@@ -57,7 +57,7 @@ services:
       - "5432:5432"
 
   statsd:
-    image: graphiteapp/docker-graphite-statsd
+    image: graphiteapp/graphite-statsd
     ports:
       - "80:80"
       - "2003-2004:2003-2004"
@@ -105,11 +105,11 @@ services:
     image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
     command: [
       "server", "start", "-vv",
-      "/app/config/s3-indexed-cas.yaml"]
+      "/app/config/monitoring-cas.yaml"]
     volumes:
       - type: bind
-        source: ./data/config/s3-indexed-cas.yaml
-        target: /app/config/s3-indexed-cas.yaml
+        source: ./data/config/monitoring-cas.yaml
+        target: /app/config/monitoring-cas.yaml
     expose:
       - 50052
     networks:
@@ -119,11 +119,11 @@ services:
     image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
     command: [
       "server", "start", "-vvv",
-      "/app/config/cache.yaml"]
+      "/app/config/monitoring-cache.yaml"]
     volumes:
       - type: bind
-        source: ./data/config/cache.yaml
-        target: /app/config/cache.yaml
+        source: ./data/config/monitoring-cache.yaml
+        target: /app/config/monitoring-cache.yaml
     expose:
       - 50053
     networks:
@@ -133,11 +133,11 @@ services:
     image: registry.gitlab.com/buildgrid/buildgrid/buildgrid:latest
     command: [
       "server", "start", "-vvv",
-      "/app/config/controller.yaml"]
+      "/app/config/monitoring-controller.yaml"]
     volumes:
       - type: bind
         source: ./data/config/monitoring-controller.yaml
-        target: /app/config/controller.yaml
+        target: /app/config/monitoring-controller.yaml
     expose:
       - 50051
     depends_on:
@@ -169,12 +169,12 @@ services:
     command: [
       "cleanup", "start", "-vv", "--high-watermark", "2G",
       "--low-watermark", "1G", "--batch-size", "100M", "--sleep-interval",
-      "10", "/app/config/s3-indexed-cas.yaml"
+      "10", "/app/config/monitoring-cas.yaml"
     ]
     volumes:
       - type: bind
-        source: ./data/config/s3-indexed-cas.yaml
-        target: /app/config/s3-indexed-cas.yaml
+        source: ./data/config/monitoring-cas.yaml
+        target: /app/config/monitoring-cas.yaml
     depends_on:
       - minio
       - database
