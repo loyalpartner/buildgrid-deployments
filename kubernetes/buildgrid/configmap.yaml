@@ -92,8 +92,19 @@ data:
           The `buildgrid` BuildGrid instance.
 
         storages:
-          - !disk-storage &cas-storage
+          - !disk-storage &disk-storage
             path: /var/lib/buildgrid/store
+
+          - !lru-storage &in-mem-storage
+            size: 1G
+
+          - !with-cache-storage &cached-storage
+            cache: *in-mem-storage
+            fallback: *disk-storage
+
+          - !sql-index &cas-storage
+            storage: *cached-storage
+            connection-string: postgresql://bgd:insecure@postgres/bgd
 
         services:
           - !cas

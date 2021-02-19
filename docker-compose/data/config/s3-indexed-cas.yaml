@@ -42,7 +42,6 @@ instances:
         connection-string: postgresql://bgd:insecure@database/bgd
         automigrate: yes
 
-
     services:
       - !cas
         storage: *my-index
