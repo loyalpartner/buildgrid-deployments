@@ -25,7 +25,7 @@ instances:
     storages:
       - !remote-storage &data-store
         url: http://storage:50052
-        instance-name: ''
+        instance-name: 'default_instance'
 
     caches:
       - !lru-action-cache &lru-cache

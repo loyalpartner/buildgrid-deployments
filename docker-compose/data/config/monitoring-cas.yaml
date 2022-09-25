@@ -23,7 +23,7 @@ monitoring:
   metric-prefix: buildgrid
 
 instances:
-  - name: ''
+  - name: 'default_instance'
     description: |
       The unique unnamed instance.
 

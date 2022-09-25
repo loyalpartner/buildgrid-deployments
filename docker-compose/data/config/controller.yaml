@@ -18,14 +18,14 @@ monitoring:
   enabled: false
 
 instances:
-  - name: ''
+  - name: 'default_instance'
     description: |
       The unique unnamed instance.
 
     storages:
       - !remote-storage &cas-storage
         url: http://storage:50052
-        instance-name: ''
+        instance-name: 'default_instance'
 
     caches:
       - !remote-action-cache &build-cache

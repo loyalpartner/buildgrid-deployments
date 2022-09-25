@@ -22,7 +22,7 @@ monitoring:
   enabled: false
 
 instances:
-  - name: ''
+  - name: 'default_instance'
     description: |
       The unique '' instance.
 
