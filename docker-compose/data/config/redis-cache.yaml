@@ -36,7 +36,7 @@ instances:
         storage: *cas-storage
         connection-string: postgresql://bgd:insecure@database/bgd
         automigrate: yes
-        pool-size: 5
+        pool-size: 100
         pool-timeout: 30
         max-overflow: 10
 
@@ -65,4 +65,4 @@ instances:
         storage: *cas-storage
 
 
-thread-pool-size: 100
+thread-pool-size: 1000
