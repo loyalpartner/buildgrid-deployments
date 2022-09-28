@@ -65,4 +65,4 @@ instances:
         storage: *cas-storage
 
 
-thread-pool-size: 1000
+thread-pool-size: 500

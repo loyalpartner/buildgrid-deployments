@@ -131,17 +131,36 @@ services:
       - backend
 
   bots:  # To be scaled horizontally
-    image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:local
+    image: buildgrid:local
+    # No need to sleep here, the bot will keep attempting to connect
+    # until BuildGrid is ready for it.
+    command: [
+      "bot", "--instance-name=default_instance",
+      "--remote=http://bots-interface:50054",
+      "--remote-cas=http://storage:50052",
+      "-w", "OSFamily", "Linux",
+      "-vvv",
+      "host-tools"]
     privileged: true
-    environment:
-      BUILDGRID_SERVER_URL: http://bots-interface:50054
-      CAS_SERVER_URL: http://storage:50052
-      RUNNER_BINARY: buildbox-run-hosttools
-    depends_on:
-      - controller
+    volumes:
+      - type: bind
+        source: ./data/bin
+        target: /app/tools
     networks:
       - backend
     restart: always
+  # bots:  # To be scaled horizontally
+  #   image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:local
+  #   privileged: true
+  #   environment:
+  #     BUILDGRID_SERVER_URL: http://bots-interface:50054
+  #     CAS_SERVER_URL: http://storage:50052
+  #     RUNNER_BINARY: buildbox-run-hosttools
+  #   depends_on:
+  #     - controller
+  #   networks:
+  #     - backend
+  #   restart: always
 
   # The cleanup container handles cleaning up old blobs from the CAS, deleting
   # them from both the S3 bucket and the SQL index.

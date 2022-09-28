@@ -64,16 +64,41 @@ services:
       - host
 
   bots:  # To be scaled horizontally
-    image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:nightly
+    image: buildgrid:local
+    # No need to sleep here, the bot will keep attempting to connect
+    # until BuildGrid is ready for it.
+    command: [
+      "bot", "--instance-name=default_instance",
+      "--remote=http://buildgrid:50051",
+      "--remote-cas=http://buildgrid:50051",
+      "-w", "OSFamily", "Linux",
+      "-vvv",
+      "host-tools"]
     privileged: true
-    environment:
-      BUILDGRID_SERVER_URL: http://buildgrid:50051
-      RUNNER_BINARY: buildbox-run-hosttools
+    volumes:
+      - type: volume
+        source: cache
+        target: /var/lib/buildgrid/cache
+      - type: bind
+        source: ./data/bin
+        target: /app/tools
     depends_on:
       - buildgrid
     networks:
       - backend
-    restart: always
+  # bots:  # To be scaled horizontally
+  #   image: registry.gitlab.com/buildgrid/buildgrid.hub.docker.com/buildbox:nightly
+  #   privileged: true
+  #   environment:
+  #     BUILDGRID_SERVER_URL: http://buildgrid:50051
+  #     INSTANCE_NAME: default_instance
+  #     CAS_SERVER_URL: http://buildgrid:50051
+  #     RUNNER_BINARY: buildbox-run-hosttools
+  #   depends_on:
+  #     - buildgrid
+  #   networks:
+  #     - backend
+  #   restart: always
 
   # We use nginx here to provide a proxy through to the BuildGrid service.
   # This allows horizontal scaling of the service whilst still providing
@@ -99,3 +124,5 @@ volumes:
     name: bgd-redis-ac-data
   db:
     name: bgd-redis-ac-scheduler-database
+  cache:
+    name: bgd-redis-ac-cache
